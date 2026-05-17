@@ -245,6 +245,7 @@ const CIPHERS = [
   { id: 'bacon', label: 'Bacon', renderer: renderBacon },
   { id: 'rail', label: 'Rail Fence', renderer: renderRailFence },
   { id: 'hunt', label: 'Puzzle Hunt', renderer: renderHunt },
+  { id: 'crack', label: 'Crack This', renderer: renderCrack },
 ];
 
 const nav = document.getElementById('nav');
@@ -629,6 +630,142 @@ window.shareHunt = (text) => {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+// ============ CRACK THIS (practice mode) ============
+const PRACTICE = [
+  {
+    level: 1,
+    type: 'Caesar',
+    cipher: 'WKLV LV WKH ILUVW VWHS',
+    answer: 'THIS IS THE FIRST STEP',
+    hint: 'Caesar shift. The classic shift is 3.',
+    explain: 'Caesar with shift +3. Try 1-25 if you do not know which.',
+  },
+  {
+    level: 2,
+    type: 'Atbash',
+    cipher: 'TLW QFWTVH FH GVMWVIOB',
+    answer: 'GOD JUDGES US TENDERLY',
+    hint: 'Symmetric Hebrew cipher: A→Z, B→Y, C→X.',
+    explain: 'Atbash is its own inverse. Just apply the same transform.',
+  },
+  {
+    level: 3,
+    type: 'Vigenère (key = MERCY)',
+    cipher: 'YIIEW FVZWKBLJ QTQV AWBSQVPR',
+    answer: 'MERCY TRIUMPHS OVER JUDGMENT',
+    hint: 'Vigenère. The key is a 5-letter virtue. Try MERCY.',
+    explain: 'Key MERCY. James 2:13.',
+  },
+  {
+    level: 4,
+    type: 'Rail Fence (3 rails)',
+    cipher: 'TEORAWHARSLPAWLOSEOSYL',
+    answer: 'THEAEROSOLSPRAYWALLOWS',
+    hint: 'Transposition with 3 rails. Zigzag pattern. Spaces dropped.',
+    explain: 'Plaintext "THE AEROSOL SPRAY WALLOWS" (22 letters w/o spaces) zigzags down 3 rails. Read rail-by-rail: rail 0 = T,E,O,R,W,W; rail 1 = H,A,R,S,L,P,A,W,L,O,S; rail 2 = E,O,S,Y,L. Concatenate.',
+  },
+  {
+    level: 5,
+    type: 'Vigenère (unknown key)',
+    cipher: 'GLGULK FHX AAV JKPHICMPXJ IY RBEAWVF GYHWEV',
+    answer: 'NUMBER ONE THE PRIORITIES OF KINGDOM PEOPLE',
+    hint: 'Try Kasiski examination. Or just guess: the key is a 5-letter word about what God speaks.',
+    explain: 'Key TRUTH. The plaintext is a sermon fragment about priorities.',
+  },
+];
+
+let practiceState = {};
+
+function renderCrack(root) {
+  root.innerHTML = `
+    <div class="panel">
+      <h2>Crack This — practice puzzles</h2>
+      <p class="desc">Five puzzles at increasing difficulty. Decrypt each ciphertext using only the cipher type as a clue. Hints unfold; answers reveal. Progress saves locally.</p>
+      <div id="puzzle-list"></div>
+    </div>
+  `;
+  // Load saved progress
+  try {
+    practiceState = JSON.parse(localStorage.getItem('cipher-lab.crack.v1') || '{}');
+  } catch { practiceState = {}; }
+  const listEl = document.getElementById('puzzle-list');
+  listEl.innerHTML = PRACTICE.map((p, i) => {
+    const st = practiceState[p.level] || { revealed: false, hintShown: false, solved: false };
+    const statusBadge = st.solved ? '<span style="color:var(--accent);font-size:0.75rem;letter-spacing:0.1em;">✓ SOLVED</span>'
+      : st.revealed ? '<span style="color:var(--warn);font-size:0.75rem;letter-spacing:0.1em;">REVEALED</span>'
+      : '';
+    return `
+      <div class="panel" style="margin: 1.25rem 0; background: #14140f; padding: 1.25rem 1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem;">
+          <h2 style="margin:0;">Level ${p.level} · ${escapeHtml(p.type)}</h2>
+          ${statusBadge}
+        </div>
+        <div class="output" style="margin-bottom:1rem;">${escapeHtml(p.cipher)}</div>
+        <div style="margin-bottom:0.85rem;">
+          <input type="text" id="crack-input-${i}" placeholder="Your decryption..." value="${escapeHtml((st.attempt || '').toUpperCase())}" style="width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--border);padding:0.6rem 0.85rem;border-radius:4px;font-family:inherit;font-size:0.95rem;text-transform:uppercase;">
+        </div>
+        <div class="row-actions">
+          <button onclick="checkCrack(${i})">Check</button>
+          <button class="ghost" onclick="hintCrack(${i})">${st.hintShown ? 'Hint shown' : 'Hint'}</button>
+          <button class="ghost" onclick="revealCrack(${i})">${st.revealed ? 'Revealed' : 'Reveal'}</button>
+        </div>
+        <div id="crack-feedback-${i}" style="margin-top:0.85rem;font-size:0.85rem;color:var(--ink-soft);">
+          ${st.hintShown ? '<div style="color:var(--warn);margin-bottom:0.4rem;"><strong>HINT:</strong> ' + escapeHtml(p.hint) + '</div>' : ''}
+          ${st.revealed ? '<div style="color:var(--accent);"><strong>ANSWER:</strong> ' + escapeHtml(p.answer) + '<br><em>' + escapeHtml(p.explain) + '</em></div>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Render scoreboard
+  const solved = Object.values(practiceState).filter(s => s.solved).length;
+  const revealed = Object.values(practiceState).filter(s => s.revealed && !s.solved).length;
+  document.getElementById('puzzle-list').insertAdjacentHTML('beforebegin', `
+    <div style="text-align:center;color:var(--ink-soft);font-size:0.85rem;margin-bottom:1rem;">
+      <strong style="color:var(--accent);">${solved}</strong> solved · <strong style="color:var(--warn);">${revealed}</strong> revealed · ${PRACTICE.length - solved - revealed} untried
+    </div>
+  `);
+}
+
+function normalize(s) {
+  return s.toUpperCase().replace(/[^A-Z]/g, '');
+}
+
+window.checkCrack = (i) => {
+  const p = PRACTICE[i];
+  const input = document.getElementById('crack-input-' + i).value;
+  practiceState[p.level] = practiceState[p.level] || {};
+  practiceState[p.level].attempt = input;
+  const fb = document.getElementById('crack-feedback-' + i);
+  if (normalize(input) === normalize(p.answer)) {
+    practiceState[p.level].solved = true;
+    localStorage.setItem('cipher-lab.crack.v1', JSON.stringify(practiceState));
+    fb.innerHTML = '<div style="color:var(--accent);font-weight:600;">✓ correct. ' + escapeHtml(p.explain) + '</div>';
+  } else {
+    localStorage.setItem('cipher-lab.crack.v1', JSON.stringify(practiceState));
+    fb.innerHTML = '<div style="color:#c46a4a;">not yet. compare your decryption letter-by-letter.</div>';
+  }
+};
+
+window.hintCrack = (i) => {
+  const p = PRACTICE[i];
+  practiceState[p.level] = practiceState[p.level] || {};
+  practiceState[p.level].hintShown = true;
+  localStorage.setItem('cipher-lab.crack.v1', JSON.stringify(practiceState));
+  document.getElementById('crack-feedback-' + i).innerHTML =
+    '<div style="color:var(--warn);"><strong>HINT:</strong> ' + escapeHtml(p.hint) + '</div>';
+};
+
+window.revealCrack = (i) => {
+  const p = PRACTICE[i];
+  if (!confirm('Reveal the answer? You will no longer be marked solved for this level.')) return;
+  practiceState[p.level] = practiceState[p.level] || {};
+  practiceState[p.level].revealed = true;
+  localStorage.setItem('cipher-lab.crack.v1', JSON.stringify(practiceState));
+  document.getElementById('crack-feedback-' + i).innerHTML =
+    '<div style="color:var(--accent);"><strong>ANSWER:</strong> ' + escapeHtml(p.answer) + '<br><em>' + escapeHtml(p.explain) + '</em></div>';
+};
 
 // Initial route
 const hash = location.hash.slice(1);
