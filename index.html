@@ -244,6 +244,7 @@ const CIPHERS = [
   { id: 'rot13', label: 'ROT13', renderer: renderRot13 },
   { id: 'bacon', label: 'Bacon', renderer: renderBacon },
   { id: 'rail', label: 'Rail Fence', renderer: renderRailFence },
+  { id: 'enigma', label: 'Enigma', renderer: renderEnigma },
   { id: 'hunt', label: 'Puzzle Hunt', renderer: renderHunt },
   { id: 'crack', label: 'Crack This', renderer: renderCrack },
 ];
@@ -630,6 +631,211 @@ window.shareHunt = (text) => {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+// ============ ENIGMA ============
+// Historical Wehrmacht Enigma I rotor wirings and notches.
+// Each wiring is the permutation A->? B->? ... Z->?
+// Notch is the letter that, when displayed in the rotor window,
+// causes the NEXT rotor to step on the next keypress.
+const ENIGMA_ROTORS = {
+  I:    { wiring: 'EKMFLGDQVZNTOWYHXUSPAIBRCJ', notch: 'Q' },
+  II:   { wiring: 'AJDKSIRUXBLHWTMCQGZNPYFVOE', notch: 'E' },
+  III:  { wiring: 'BDFHJLCPRTXVZNYEIWGAKMUSQO', notch: 'V' },
+  IV:   { wiring: 'ESOVPZJAYQUIRHXLNFTGKDCMWB', notch: 'J' },
+  V:    { wiring: 'VZBRGITYUPSDNHLXAWMJQOFECK', notch: 'Z' },
+};
+const ENIGMA_REFLECTORS = {
+  A: 'EJMZALYXVBWFCRQUONTSPIKHGD',
+  B: 'YRUHQSLDPXNGOKMIEBFZCWVJAT',
+  C: 'FVPJIAOYEDRZXWGCTKUQSBNMHL',
+};
+
+function letterToNum(c) { return c.charCodeAt(0) - 65; }
+function numToLetter(n) { return String.fromCharCode(((n % 26) + 26) % 26 + 65); }
+
+function makeRotor(name, position) {
+  // position: letter shown in the window initially, e.g. 'A'
+  const r = ENIGMA_ROTORS[name];
+  // Forward map: input pin index -> output pin index, given rotor at position 0
+  const wiring = r.wiring.split('').map(letterToNum);
+  const reverse = new Array(26);
+  wiring.forEach((to, from) => { reverse[to] = from; });
+  return {
+    name,
+    notchPos: letterToNum(r.notch),
+    pos: letterToNum(position),
+    forward: wiring,
+    reverse,
+  };
+}
+
+function makeReflector(name) {
+  return ENIGMA_REFLECTORS[name].split('').map(letterToNum);
+}
+
+function makePlugboard(pairsStr) {
+  const map = new Array(26).fill(0).map((_, i) => i);
+  const pairs = pairsStr.toUpperCase().split(/[\s,]+/).filter(s => s.length === 2);
+  pairs.forEach(p => {
+    const a = letterToNum(p[0]);
+    const b = letterToNum(p[1]);
+    if (a >= 0 && a < 26 && b >= 0 && b < 26) {
+      map[a] = b;
+      map[b] = a;
+    }
+  });
+  return map;
+}
+
+function rotorForward(rotor, signalIdx) {
+  // shift input by rotor position, look up wiring, shift output back
+  const shifted = (signalIdx + rotor.pos) % 26;
+  const wired = rotor.forward[shifted];
+  return ((wired - rotor.pos) % 26 + 26) % 26;
+}
+
+function rotorReverse(rotor, signalIdx) {
+  const shifted = (signalIdx + rotor.pos) % 26;
+  const wired = rotor.reverse[shifted];
+  return ((wired - rotor.pos) % 26 + 26) % 26;
+}
+
+function stepRotors(rotors) {
+  // rotors[0] = fast rotor (right), rotors[1] = middle, rotors[2] = slow (left)
+  // Double-stepping: if middle rotor is at its notch, both middle AND slow step.
+  const willStepMiddle = (rotors[0].pos === rotors[0].notchPos);
+  const willStepSlow = (rotors[1].pos === rotors[1].notchPos);
+  // Middle steps if right is at notch OR middle is at notch (double-step)
+  if (willStepMiddle || willStepSlow) {
+    rotors[1].pos = (rotors[1].pos + 1) % 26;
+  }
+  // Slow steps only if middle is at notch
+  if (willStepSlow) {
+    rotors[2].pos = (rotors[2].pos + 1) % 26;
+  }
+  // Fast rotor always steps
+  rotors[0].pos = (rotors[0].pos + 1) % 26;
+}
+
+function encryptLetter(letter, state) {
+  if (!/[A-Z]/.test(letter)) return letter;
+  stepRotors(state.rotors);
+  let signal = letterToNum(letter);
+  // Through plugboard
+  signal = state.plugboard[signal];
+  // Through rotors right to left
+  signal = rotorForward(state.rotors[0], signal);
+  signal = rotorForward(state.rotors[1], signal);
+  signal = rotorForward(state.rotors[2], signal);
+  // Through reflector
+  signal = state.reflector[signal];
+  // Back through rotors left to right
+  signal = rotorReverse(state.rotors[2], signal);
+  signal = rotorReverse(state.rotors[1], signal);
+  signal = rotorReverse(state.rotors[0], signal);
+  // Back through plugboard
+  signal = state.plugboard[signal];
+  return numToLetter(signal);
+}
+
+function runEnigma(text, config) {
+  const state = {
+    rotors: [
+      makeRotor(config.r1, config.p1),  // fast (right)
+      makeRotor(config.r2, config.p2),  // middle
+      makeRotor(config.r3, config.p3),  // slow (left)
+    ],
+    reflector: makeReflector(config.reflector),
+    plugboard: makePlugboard(config.plugboard || ''),
+  };
+  return text.toUpperCase().split('').map(c => encryptLetter(c, state)).join('');
+}
+
+function renderEnigma(root) {
+  const rotorOpts = Object.keys(ENIGMA_ROTORS).map(k => `<option value="${k}">${k}</option>`).join('');
+  const reflectorOpts = Object.keys(ENIGMA_REFLECTORS).map(k => `<option value="${k}">${k}</option>`).join('');
+  const positions = Array.from({length: 26}, (_, i) => `<option value="${numToLetter(i)}">${numToLetter(i)}</option>`).join('');
+
+  root.innerHTML = `
+    <div class="panel">
+      <h2>Enigma Machine</h2>
+      <p class="desc">Faithful sim of the German Wehrmacht Enigma I (3 rotors, plugboard, reflector). Encryption and decryption are the same operation — the machine is its own inverse for any given setting. The stepping is real: middle rotor advances when right rotor hits its notch, and the famous double-stepping anomaly is preserved.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.6rem;margin-bottom:1rem;">
+        <div>
+          <div style="color:var(--accent);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;">Slow (L)</div>
+          <select id="eni-r3" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.5rem;font-family:inherit;width:100%;">${rotorOpts}</select>
+          <select id="eni-p3" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.5rem;font-family:inherit;margin-top:0.3rem;width:100%;">${positions}</select>
+        </div>
+        <div>
+          <div style="color:var(--accent);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;">Middle</div>
+          <select id="eni-r2" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.5rem;font-family:inherit;width:100%;">${rotorOpts}</select>
+          <select id="eni-p2" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.5rem;font-family:inherit;margin-top:0.3rem;width:100%;">${positions}</select>
+        </div>
+        <div>
+          <div style="color:var(--accent);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;">Fast (R)</div>
+          <select id="eni-r1" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.5rem;font-family:inherit;width:100%;">${rotorOpts}</select>
+          <select id="eni-p1" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.5rem;font-family:inherit;margin-top:0.3rem;width:100%;">${positions}</select>
+        </div>
+      </div>
+
+      <div class="controls">
+        <label>Reflector</label>
+        <select id="eni-reflector" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.5rem;font-family:inherit;">${reflectorOpts}</select>
+      </div>
+
+      <label style="color:var(--accent);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;margin-top:0.85rem;display:block;">Plugboard (space-separated pairs, e.g., "AB CD EF")</label>
+      <input type="text" id="eni-plugboard" placeholder="AB CD EF" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--border);border-radius:4px;padding:0.6rem 0.85rem;font-family:inherit;font-size:0.95rem;width:100%;margin-bottom:0.85rem;">
+
+      <textarea id="eni-input" placeholder="Type plaintext or ciphertext. Same operation either way."></textarea>
+      <div class="row-actions">
+        <button onclick="runEnigmaUI()">Run</button>
+        <button class="ghost" onclick="enigmaPreset('basic')">Reset to default</button>
+        <button class="ghost" onclick="enigmaPreset('historic')">Historic test (I II III, AAA, B reflector)</button>
+      </div>
+      <div id="eni-out" class="output">—</div>
+      <p class="hint">Default config gets you the standard 'AAAAA' → 'BDZGO' famous-first-letters test. Try encrypting 'ENIGMA' and then encrypting your ciphertext with the same settings — you get 'ENIGMA' back.</p>
+    </div>
+  `;
+
+  // Set sensible defaults
+  document.getElementById('eni-r3').value = 'I';
+  document.getElementById('eni-r2').value = 'II';
+  document.getElementById('eni-r1').value = 'III';
+  document.getElementById('eni-p3').value = 'A';
+  document.getElementById('eni-p2').value = 'A';
+  document.getElementById('eni-p1').value = 'A';
+  document.getElementById('eni-reflector').value = 'B';
+}
+
+window.runEnigmaUI = () => {
+  const config = {
+    r1: document.getElementById('eni-r1').value,
+    r2: document.getElementById('eni-r2').value,
+    r3: document.getElementById('eni-r3').value,
+    p1: document.getElementById('eni-p1').value,
+    p2: document.getElementById('eni-p2').value,
+    p3: document.getElementById('eni-p3').value,
+    reflector: document.getElementById('eni-reflector').value,
+    plugboard: document.getElementById('eni-plugboard').value,
+  };
+  const input = document.getElementById('eni-input').value;
+  const output = runEnigma(input, config);
+  document.getElementById('eni-out').textContent = output || '—';
+};
+
+window.enigmaPreset = (preset) => {
+  if (preset === 'basic' || preset === 'historic') {
+    document.getElementById('eni-r3').value = 'I';
+    document.getElementById('eni-r2').value = 'II';
+    document.getElementById('eni-r1').value = 'III';
+    document.getElementById('eni-p3').value = 'A';
+    document.getElementById('eni-p2').value = 'A';
+    document.getElementById('eni-p1').value = 'A';
+    document.getElementById('eni-reflector').value = 'B';
+    document.getElementById('eni-plugboard').value = '';
+  }
+};
 
 // ============ CRACK THIS (practice mode) ============
 const PRACTICE = [
