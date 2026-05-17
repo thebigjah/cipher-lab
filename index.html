@@ -429,6 +429,19 @@ function renderBacon(root) {
       <div id="bacon-out" class="output">—</div>
       <p class="hint">Try: encode "HELLO" → AABBB AABAA ABABB ABABB ABBBA. Then imagine each A as a regular letter, each B as a bold letter, hidden in normal-looking text.</p>
     </div>
+
+    <div class="panel">
+      <h2>Bacon hidden in carrier text</h2>
+      <p class="desc">Bacon's full power: hide AB pattern in a normal-looking sentence using italic vs. regular type. Paste a long carrier and a short secret. The output looks like ordinary writing — but italicized letters spell out your secret.</p>
+      <textarea id="bacon-secret" placeholder="Secret to hide (e.g., MEET AT THE LIBRARY)"></textarea>
+      <textarea id="bacon-carrier" placeholder="Carrier text (must contain enough letters — need 5 letters per secret letter). Try a Bible verse or a Wikipedia paragraph."></textarea>
+      <div class="controls">
+        <button onclick="hideBacon()">Hide in carrier</button>
+        <button class="ghost" onclick="revealBacon()">Reveal from italic pattern</button>
+      </div>
+      <div id="bacon-hidden-out" class="output">—</div>
+      <p class="hint">The output uses italic tags. View source on the printed page to see exactly which letters were marked. For a real hunt: print the message and italicize the marked letters by hand, OR use Word's italic styling — solvers must spot which letters look different.</p>
+    </div>
   `;
 }
 window.runBaconEncode = () => {
@@ -436,6 +449,40 @@ window.runBaconEncode = () => {
 };
 window.runBaconDecode = () => {
   document.getElementById('bacon-out').textContent = baconDecode(document.getElementById('bacon-in').value);
+};
+
+window.hideBacon = () => {
+  const secret = document.getElementById('bacon-secret').value.toUpperCase().replace(/[^A-Z]/g, '');
+  const carrier = document.getElementById('bacon-carrier').value;
+  const out = document.getElementById('bacon-hidden-out');
+  if (!secret || !carrier) { out.textContent = 'Need both a secret and a carrier.'; return; }
+  const baconBits = secret.split('').map(c => BACON_TABLE[c]).join('');
+  // Now walk the carrier — for each letter, consume one bit. A = roman, B = italic.
+  const carrierLetters = carrier.match(/[a-zA-Z]/g) || [];
+  if (carrierLetters.length < baconBits.length) {
+    out.innerHTML = `<span style="color:var(--warn);">Carrier too short: needs ${baconBits.length} letters, has ${carrierLetters.length}. Add more text.</span>`;
+    return;
+  }
+  let bitIdx = 0;
+  const html = carrier.split('').map(ch => {
+    if (/[a-zA-Z]/.test(ch)) {
+      if (bitIdx < baconBits.length) {
+        const bit = baconBits[bitIdx];
+        bitIdx++;
+        return bit === 'B' ? `<em style="color:var(--accent);">${ch}</em>` : ch;
+      }
+    }
+    return ch;
+  }).join('');
+  out.innerHTML = `<div style="line-height:1.8;">${html}</div><br><span style="color:var(--ink-faint);font-size:0.8rem;">Used ${baconBits.length} letters of ${carrierLetters.length} available. Italicized letters (in green) = B bits. Print + italicize by hand for a real hunt.</span>`;
+};
+
+window.revealBacon = () => {
+  const carrier = document.getElementById('bacon-carrier').value;
+  // Parse the HTML — italic = B, regular = A. But since the carrier is a textarea,
+  // we can't read formatting. So this mode is for when the user pastes AB-pattern strings.
+  const out = document.getElementById('bacon-hidden-out');
+  out.innerHTML = `<span style="color:var(--ink-soft);">Reveal mode: textarea can't carry italic formatting. To decode an italicized-text Bacon message: type 'A' for each regular letter and 'B' for each italic letter into the regular Bacon Decode box above, then hit Decode. (Or — for a future v0.3, paste rich HTML here.)</span>`;
 };
 
 // ============ RAIL FENCE ============
