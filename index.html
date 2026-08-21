@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cipher Lab, encode, decode, hide | Elijah Purcell</title>
 <meta name="description" content="A workbench for six classic ciphers: Caesar, Atbash, Vigenere, Bacon, ROT13, Rail Fence, plus a puzzle generator. By Elijah Purcell, Purcell Ventures.">
-<meta property="og:title" content="Cipher Lab — encode, decode, hide">
+<meta property="og:title" content="Cipher Lab, encode, decode, hide">
 <meta property="og:description" content="A workbench for six classic ciphers: Caesar, Atbash, Vigenere, Bacon, ROT13, Rail Fence, plus a puzzle generator. By Elijah Purcell, Purcell Ventures.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +56,7 @@
     line-height: 1.55;
     min-height: 100vh;
     padding: 1rem;
-    /* Chalkboard texture — soft noise + vignette */
+    /* Chalkboard texture, soft noise + vignette */
     background-image:
       radial-gradient(ellipse 90% 70% at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.35) 100%);
     -webkit-font-smoothing: antialiased;
@@ -353,7 +353,7 @@
   <p>Built for Lee Summer Honors cryptography week. Six ciphers covered.<br>
   <a href="https://github.com/thebigjah/cipher-lab">github.com/thebigjah/cipher-lab</a> · <a href="#" onclick="document.body.scrollIntoView({top:0})">↑ top</a>
   </p>
-  <div class="credit">— PURCELLVENTURES.CO —</div>
+  <div class="credit">, PURCELLVENTURES.CO,</div>
 </footer>
 
 </div>
@@ -406,7 +406,7 @@ function renderCaesar(root) {
   root.innerHTML = `
     <div class="panel">
       <h2>Caesar Cipher</h2>
-      <p class="desc">Each letter shifts forward by a fixed number. Named for Julius Caesar (shift of 3). Trivially breakable by frequency analysis — try shifting 1 through 25 until something reads as English.</p>
+      <p class="desc">Each letter shifts forward by a fixed number. Named for Julius Caesar (shift of 3). Trivially breakable by frequency analysis, try shifting 1 through 25 until something reads as English.</p>
       <textarea id="caesar-in" placeholder="Type plaintext or ciphertext here..."></textarea>
       <div class="controls">
         <label>Shift</label>
@@ -416,7 +416,7 @@ function renderCaesar(root) {
         <button class="ghost" onclick="runCaesarReverse()">← Decode</button>
         <button class="ghost" onclick="bruteCaesar()">Brute force</button>
       </div>
-      <div id="caesar-out" class="output">—</div>
+      <div id="caesar-out" class="output">, </div>
       <p class="hint">Tip: the shift-by-13 special case is called ROT13 and is its own tab.</p>
     </div>
   `;
@@ -453,11 +453,11 @@ function renderAtbash(root) {
     <div class="panel">
       <h2>Atbash Cipher</h2>
       <p class="desc">Hebrew-origin: A → Z, B → Y, C → X. The alphabet reversed against itself. Self-inverse (encode = decode). Appears in the Hebrew Bible (Jeremiah 25:26, "Sheshach" → "Babel").</p>
-      <textarea id="atbash-in" placeholder="Type any text — atbash is symmetric, same operation either direction"></textarea>
+      <textarea id="atbash-in" placeholder="Type any text, atbash is symmetric, same operation either direction"></textarea>
       <div class="controls">
         <button onclick="runAtbash()">Transform</button>
       </div>
-      <div id="atbash-out" class="output">—</div>
+      <div id="atbash-out" class="output">, </div>
       <table class="table">
         <tr><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th><th>I</th><th>J</th><th>K</th><th>L</th><th>M</th></tr>
         <tr><td>Z</td><td>Y</td><td>X</td><td>W</td><td>V</td><td>U</td><td>T</td><td>S</td><td>R</td><td>Q</td><td>P</td><td>O</td><td>N</td></tr>
@@ -466,7 +466,7 @@ function renderAtbash(root) {
   `;
 }
 window.runAtbash = () => {
-  document.getElementById('atbash-out').textContent = atbash(document.getElementById('atbash-in').value) || '—';
+  document.getElementById('atbash-out').textContent = atbash(document.getElementById('atbash-in').value) || ', ';
 };
 
 // ============ VIGENERE ============
@@ -496,7 +496,7 @@ function renderVigenere(root) {
         <button onclick="runVig(false)">Encode →</button>
         <button class="ghost" onclick="runVig(true)">← Decode</button>
       </div>
-      <div id="vig-out" class="output">—</div>
+      <div id="vig-out" class="output">, </div>
       <p class="hint">Example: plaintext "ATTACKATDAWN" with key "LEMON" → "LXFOPVEFRNHR". The longer + more random the key, the harder to break.</p>
     </div>
   `;
@@ -512,12 +512,12 @@ function renderRot13(root) {
   root.innerHTML = `
     <div class="panel">
       <h2>ROT13</h2>
-      <p class="desc">Caesar shift of 13. Its own inverse (because 13 + 13 = 26 = full rotation). Standard on Usenet in the 1980s to hide spoilers + punchlines. Provides no actual security — pure novelty.</p>
+      <p class="desc">Caesar shift of 13. Its own inverse (because 13 + 13 = 26 = full rotation). Standard on Usenet in the 1980s to hide spoilers + punchlines. Provides no actual security, pure novelty.</p>
       <textarea id="rot13-in" placeholder="Type any text. ROT13(ROT13(x)) = x."></textarea>
       <div class="controls">
         <button onclick="runRot13()">Transform</button>
       </div>
-      <div id="rot13-out" class="output">—</div>
+      <div id="rot13-out" class="output">, </div>
       <p class="hint">Famous: "Pretty Good Privacy" → "Cerggl Tbbq Cevinpl" → "Pretty Good Privacy"</p>
     </div>
   `;
@@ -546,27 +546,27 @@ function renderBacon(root) {
   root.innerHTML = `
     <div class="panel">
       <h2>Bacon Cipher</h2>
-      <p class="desc">Francis Bacon, 1605. Each letter encoded as 5 binary digits (A/B). The trick: the A's and B's can be HIDDEN in any binary distinction in the carrier — italic vs. roman type, capital vs. lowercase letters, long notes vs. short, white tiles vs. black. Bacon called it a way to "infold" a message inside another.</p>
+      <p class="desc">Francis Bacon, 1605. Each letter encoded as 5 binary digits (A/B). The trick: the A's and B's can be HIDDEN in any binary distinction in the carrier, italic vs. roman type, capital vs. lowercase letters, long notes vs. short, white tiles vs. black. Bacon called it a way to "infold" a message inside another.</p>
       <textarea id="bacon-in" placeholder="Plaintext to encode, or Bacon AB-string to decode"></textarea>
       <div class="controls">
         <button onclick="runBaconEncode()">Encode →</button>
         <button class="ghost" onclick="runBaconDecode()">← Decode</button>
       </div>
-      <div id="bacon-out" class="output">—</div>
+      <div id="bacon-out" class="output">, </div>
       <p class="hint">Try: encode "HELLO" → AABBB AABAA ABABB ABABB ABBBA. Then imagine each A as a regular letter, each B as a bold letter, hidden in normal-looking text.</p>
     </div>
 
     <div class="panel">
       <h2>Bacon hidden in carrier text</h2>
-      <p class="desc">Bacon's full power: hide AB pattern in a normal-looking sentence using italic vs. regular type. Paste a long carrier and a short secret. The output looks like ordinary writing — but italicized letters spell out your secret.</p>
+      <p class="desc">Bacon's full power: hide AB pattern in a normal-looking sentence using italic vs. regular type. Paste a long carrier and a short secret. The output looks like ordinary writing, but italicized letters spell out your secret.</p>
       <textarea id="bacon-secret" placeholder="Secret to hide (e.g., MEET AT THE LIBRARY)"></textarea>
-      <textarea id="bacon-carrier" placeholder="Carrier text (must contain enough letters — need 5 letters per secret letter). Try a Bible verse or a Wikipedia paragraph."></textarea>
+      <textarea id="bacon-carrier" placeholder="Carrier text (must contain enough letters, need 5 letters per secret letter). Try a Bible verse or a Wikipedia paragraph."></textarea>
       <div class="controls">
         <button onclick="hideBacon()">Hide in carrier</button>
         <button class="ghost" onclick="revealBacon()">Reveal from italic pattern</button>
       </div>
-      <div id="bacon-hidden-out" class="output">—</div>
-      <p class="hint">The output uses italic tags. View source on the printed page to see exactly which letters were marked. For a real hunt: print the message and italicize the marked letters by hand, OR use Word's italic styling — solvers must spot which letters look different.</p>
+      <div id="bacon-hidden-out" class="output">, </div>
+      <p class="hint">The output uses italic tags. View source on the printed page to see exactly which letters were marked. For a real hunt: print the message and italicize the marked letters by hand, OR use Word's italic styling, solvers must spot which letters look different.</p>
     </div>
   `;
 }
@@ -583,7 +583,7 @@ window.hideBacon = () => {
   const out = document.getElementById('bacon-hidden-out');
   if (!secret || !carrier) { out.textContent = 'Need both a secret and a carrier.'; return; }
   const baconBits = secret.split('').map(c => BACON_TABLE[c]).join('');
-  // Now walk the carrier — for each letter, consume one bit. A = roman, B = italic.
+  // Now walk the carrier, for each letter, consume one bit. A = roman, B = italic.
   const carrierLetters = carrier.match(/[a-zA-Z]/g) || [];
   if (carrierLetters.length < baconBits.length) {
     out.innerHTML = `<span style="color:var(--warn);">Carrier too short: needs ${baconBits.length} letters, has ${carrierLetters.length}. Add more text.</span>`;
@@ -605,10 +605,10 @@ window.hideBacon = () => {
 
 window.revealBacon = () => {
   const carrier = document.getElementById('bacon-carrier').value;
-  // Parse the HTML — italic = B, regular = A. But since the carrier is a textarea,
+  // Parse the HTML, italic = B, regular = A. But since the carrier is a textarea,
   // we can't read formatting. So this mode is for when the user pastes AB-pattern strings.
   const out = document.getElementById('bacon-hidden-out');
-  out.innerHTML = `<span style="color:var(--ink-soft);">Reveal mode: textarea can't carry italic formatting. To decode an italicized-text Bacon message: type 'A' for each regular letter and 'B' for each italic letter into the regular Bacon Decode box above, then hit Decode. (Or — for a future v0.3, paste rich HTML here.)</span>`;
+  out.innerHTML = `<span style="color:var(--ink-soft);">Reveal mode: textarea can't carry italic formatting. To decode an italicized-text Bacon message: type 'A' for each regular letter and 'B' for each italic letter into the regular Bacon Decode box above, then hit Decode. (Or, for a future v0.3, paste rich HTML here.)</span>`;
 };
 
 // ============ RAIL FENCE ============
@@ -653,7 +653,7 @@ function renderRailFence(root) {
         <button onclick="runRail(false)">Encode →</button>
         <button class="ghost" onclick="runRail(true)">← Decode</button>
       </div>
-      <div id="rail-out" class="output">—</div>
+      <div id="rail-out" class="output">, </div>
       <p class="hint">Example with 3 rails: "WEAREDISCOVERED" → "WECRUOERDSOEEVRD" (the W goes on rail 0, E on rail 1, A on rail 2, R on rail 1, then bounces back up).</p>
     </div>
   `;
@@ -883,7 +883,7 @@ function renderEnigma(root) {
   root.innerHTML = `
     <div class="panel">
       <h2>Enigma Machine</h2>
-      <p class="desc">Faithful sim of the German Wehrmacht Enigma I (3 rotors, plugboard, reflector). Encryption and decryption are the same operation — the machine is its own inverse for any given setting. The stepping is real: middle rotor advances when right rotor hits its notch, and the famous double-stepping anomaly is preserved.</p>
+      <p class="desc">Faithful sim of the German Wehrmacht Enigma I (3 rotors, plugboard, reflector). Encryption and decryption are the same operation, the machine is its own inverse for any given setting. The stepping is real: middle rotor advances when right rotor hits its notch, and the famous double-stepping anomaly is preserved.</p>
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.6rem;margin-bottom:1rem;">
         <div>
@@ -917,8 +917,8 @@ function renderEnigma(root) {
         <button class="ghost" onclick="enigmaPreset('basic')">Reset to default</button>
         <button class="ghost" onclick="enigmaPreset('historic')">Historic test (I II III, AAA, B reflector)</button>
       </div>
-      <div id="eni-out" class="output">—</div>
-      <p class="hint">Default config gets you the standard 'AAAAA' → 'BDZGO' famous-first-letters test. Try encrypting 'ENIGMA' and then encrypting your ciphertext with the same settings — you get 'ENIGMA' back.</p>
+      <div id="eni-out" class="output">, </div>
+      <p class="hint">Default config gets you the standard 'AAAAA' → 'BDZGO' famous-first-letters test. Try encrypting 'ENIGMA' and then encrypting your ciphertext with the same settings, you get 'ENIGMA' back.</p>
     </div>
   `;
 
@@ -945,7 +945,7 @@ window.runEnigmaUI = () => {
   };
   const input = document.getElementById('eni-input').value;
   const output = runEnigma(input, config);
-  document.getElementById('eni-out').textContent = output || '—';
+  document.getElementById('eni-out').textContent = output || ', ';
 };
 
 window.enigmaPreset = (preset) => {
@@ -1010,7 +1010,7 @@ let practiceState = {};
 function renderCrack(root) {
   root.innerHTML = `
     <div class="panel">
-      <h2>Crack This — practice puzzles</h2>
+      <h2>Crack This, practice puzzles</h2>
       <p class="desc">Five puzzles at increasing difficulty. Decrypt each ciphertext using only the cipher type as a clue. Hints unfold; answers reveal. Progress saves locally.</p>
       <div id="puzzle-list"></div>
     </div>
